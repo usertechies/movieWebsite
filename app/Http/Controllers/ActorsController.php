@@ -6,10 +6,12 @@ use Illuminate\Http\Request;
 use App\ViewModels\ActorViewModel;
 use App\ViewModels\ActorsViewModel;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\RequestException;
+use App\Exceptions\ResourceNotFoundException;
 
 class ActorsController extends Controller
 {
-     /**
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
@@ -18,9 +20,14 @@ class ActorsController extends Controller
     {
         abort_if($page > 500, 204);
 
-        $popularActors = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/person/popular?page='.$page)
-            ->json()['results'];
+        try {
+            $popularActors = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/person/popular?page='.$page)
+                ->throw()
+                ->json()['results'];
+        } catch (RequestException $e) {
+            return response()->view('errors.api', ['message' => $e->getMessage()], $e->getCode());
+        }
 
         $viewModel = new ActorsViewModel($popularActors, $page);
 
@@ -34,7 +41,7 @@ class ActorsController extends Controller
      */
     public function create()
     {
-        //
+        // Create logic here
     }
 
     /**
@@ -44,30 +51,36 @@ class ActorsController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-
     {
-        //
+        // Store logic here
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * * @return \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
      */
     public function show($id)
     {
-        $actor = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/person/'.$id)
-            ->json();
+        try {
+            $actor = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/person/'.$id)
+                ->throw()
+                ->json();
 
-        $social = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/person/'.$id.'/external_ids')
-            ->json();
+            $social = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/person/'.$id.'/external_ids')
+                ->throw()
+                ->json();
 
-        $credits = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/person/'.$id.'/combined_credits')
-            ->json();
+            $credits = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/person/'.$id.'/combined_credits')
+                ->throw()
+                ->json();
+        } catch (RequestException $e) {
+            throw new ResourceNotFoundException();
+        }
 
         $viewModel = new ActorViewModel($actor, $social, $credits);
 
@@ -82,7 +95,7 @@ class ActorsController extends Controller
      */
     public function edit($id)
     {
-        //
+        // Edit logic here
     }
 
     /**
@@ -94,7 +107,7 @@ class ActorsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        // Update logic here
     }
 
     /**
@@ -105,6 +118,6 @@ class ActorsController extends Controller
      */
     public function destroy($id)
     {
-        //
+        // Destroy logic here
     }
 }

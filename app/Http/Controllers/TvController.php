@@ -6,26 +6,36 @@ use Illuminate\Http\Request;
 use App\ViewModels\TvViewModel;
 use App\ViewModels\TvShowViewModel;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\RequestException;
+use App\Exceptions\ResourceNotFoundException;
+
 class TvController extends Controller
 {
-     /**
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
      */
     public function index()
     {
-        $popularTv = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/tv/popular')
-            ->json()['results'];
+        try {
+            $popularTv = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/tv/popular')
+                ->throw()
+                ->json()['results'];
 
-        $topRatedTv = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/tv/top_rated')
-            ->json()['results'];
+            $topRatedTv = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/tv/top_rated')
+                ->throw()
+                ->json()['results'];
 
-        $genres = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/genre/tv/list')
-            ->json()['genres'];
+            $genres = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/genre/tv/list')
+                ->throw()
+                ->json()['genres'];
+        } catch (RequestException $e) {
+            return response()->view('errors.api', ['message' => $e->getMessage()], $e->getCode());
+        }
 
         $viewModel = new TvViewModel(
             $popularTv,
@@ -43,7 +53,7 @@ class TvController extends Controller
      */
     public function create()
     {
-        //
+        // Create logic here
     }
 
     /**
@@ -54,7 +64,7 @@ class TvController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // Store logic here
     }
 
     /**
@@ -65,9 +75,14 @@ class TvController extends Controller
      */
     public function show($id)
     {
-        $tvshow = Http::withToken(config('services.tmdb.token'))
-            ->get('https://api.themoviedb.org/3/tv/'.$id.'?append_to_response=credits,videos,images')
-            ->json();
+        try {
+            $tvshow = Http::withToken(config('services.tmdb.token'))
+                ->get('https://api.themoviedb.org/3/tv/'.$id.'?append_to_response=credits,videos,images')
+                ->throw()
+                ->json();
+        } catch (RequestException $e) {
+            throw new ResourceNotFoundException();
+        }
 
         $viewModel = new TvShowViewModel($tvshow);
 
@@ -82,7 +97,7 @@ class TvController extends Controller
      */
     public function edit($id)
     {
-        //
+        // Edit logic here
     }
 
     /**
@@ -94,7 +109,7 @@ class TvController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        // Update logic here
     }
 
     /**
@@ -105,8 +120,6 @@ class TvController extends Controller
      */
     public function destroy($id)
     {
-        //
+        // Destroy logic here
     }
 }
-
-
